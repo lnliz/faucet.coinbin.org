@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signet Bitcoin Faucet</title>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #f0f0f0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 30px;
+            background: #2a2a2a;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #f7931a;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #999;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .info-message {
+            color: #ccc;
+            font-size: 13px;
+            margin-bottom: 30px;
+        }
+
+        .info-message a {
+            color: #f7931a;
+            text-decoration: none;
+        }
+
+        .info-message a:hover {
+            text-decoration: underline;
+        }
+
+        .info-box {
+            background: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 25px;
+            border-left: 4px solid #f7931a;
+        }
+
+        .info-box p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            background: #333;
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: #f0f0f0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #f7931a;
+        }
+
+        .turnstile-wrapper {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #f7931a;
+            color: #1a1a1a;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #ff a824;
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .message.success {
+            background: #1a4d2e;
+            color: #4ade80;
+            border: 1px solid #4ade80;
+        }
+
+        .message.error {
+            background: #4d1a1a;
+            color: #f87171;
+            border: 1px solid #f87171;
+        }
+
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #fff;
+            font-size: 12px;
+        }
+
+        .footer a {
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Signet Bitcoin Faucet</h1>
+        <p class="subtitle">Get free signet coins for testing</p>
+        <p class="info-message">This faucet is open-source, you can find more information <a href="https://github.com/lnliz/faucet.coinbin.org" target="_blank">here</a></p>
+
+        <form id="faucet-form">
+            <div class="form-group">
+                <label for="address">Signet Address (tb1...)</label>
+                <input
+                    type="text"
+                    id="address"
+                    name="address"
+                    placeholder="tb1..."
+                    required
+                    autocomplete="off"
+                >
+            </div>
+
+            <button type="submit" id="submit-btn" {{if .TurnstileSiteKey}}disabled{{end}}>Request Coins</button>
+            <br><br><br>
+            {{if .TurnstileSiteKey}}
+            <div class="turnstile-wrapper">
+                <div class="cf-turnstile" data-sitekey="{{.TurnstileSiteKey}}" data-theme="dark" data-callback="onTurnstileSuccess"></div>
+            </div>
+            {{end}}
+
+        </form>
+
+        <div id="message" class="message"></div>
+
+        <div class="footer">
+            <p> wallet balance: {{printf "%.4f" .WalletBalance}} sBTC  || <a href="https://github.com/lnliz/faucet.coinbin.org" target="_blank">github repo</a> </p>
+            <p><a href="https://github.com/lnliz/faucet.coinbin.org/commit/{{.CommitHash}}" target="_blank">{{ .CommitHash }}</a> </p>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('faucet-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const messageDiv = document.getElementById('message');
+        const addressInput = document.getElementById('address');
+        const hasTurnstile = {{if .TurnstileSiteKey}}true{{else}}false{{end}};
+
+        function onTurnstileSuccess(token) {
+            submitBtn.disabled = false;
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const address = addressInput.value.trim();
+
+            if (!address) {
+                showMessage('Please enter an address', 'error');
+                return;
+            }
+
+            let turnstileToken = '';
+            if (hasTurnstile) {
+                turnstileToken = turnstile.getResponse();
+                if (!turnstileToken) {
+                    showMessage('Please complete the verification', 'error');
+                    return;
+                }
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            try {
+                const response = await fetch('/api/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        address: address,
+                        turnstile_token: turnstileToken
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage(result.message || 'Success!', 'success');
+                    addressInput.value = '';
+                    if (hasTurnstile) {
+                        turnstile.reset();
+                        submitBtn.disabled = true;
+                    }
+                } else {
+                    showMessage(result.error || 'An error occurred', 'error');
+                    if (hasTurnstile) {
+                        turnstile.reset();
+                        submitBtn.disabled = true;
+                    }
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, 'error');
+                if (hasTurnstile) {
+                    turnstile.reset();
+                    submitBtn.disabled = true;
+                }
+            } finally {
+                if (!hasTurnstile) {
+                    submitBtn.disabled = false;
+                }
+                submitBtn.textContent = 'Request Coins';
+            }
+        });
+
+        function showMessage(text, type) {
+            messageDiv.textContent = text;
+            messageDiv.className = 'message ' + type;
+            messageDiv.style.display = 'block';
+
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 10000);
+        }
+    </script>
+</body>
+</html>
