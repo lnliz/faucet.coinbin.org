@@ -1,8 +1,10 @@
 package service
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/lnliz/faucet.coinbin.org/db"
 
@@ -56,6 +58,15 @@ var (
 		},
 		[]string{"method", "path", "status"},
 	)
+
+	HttpRequestDuration = promauto.NewSummaryVec(
+		prometheus.SummaryOpts{
+			Name:       "http_request_duration_seconds",
+			Help:       "HTTP request duration in seconds",
+			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.95: 0.005, 0.99: 0.001},
+		},
+		[]string{"method", "path", "status"},
+	)
 )
 
 func (svc *Service) CollectMetrics() {
@@ -98,7 +109,7 @@ func (svc *Service) CollectMetrics() {
 func (svc *Service) StartMetricsHttpServer() {
 	go func() {
 		http.Handle("/metrics", svc.MetricsHandler())
-		log.Printf("Starting metrics server on http://%s", svc.cfg.MetricsAddr)
+		log.Printf("Starting metrics server: http://%s/metrics", svc.cfg.MetricsAddr)
 		if err := http.ListenAndServe(svc.cfg.MetricsAddr, nil); err != nil {
 			log.Fatalf("Failed to start metrics server: %v", err)
 		}
@@ -109,5 +120,27 @@ func (svc *Service) MetricsHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		svc.CollectMetrics()
 		promhttp.Handler().ServeHTTP(w, r)
+	})
+}
+
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
+func metricsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		next.ServeHTTP(rw, r)
+		duration := time.Since(start).Seconds()
+		status := fmt.Sprintf("%d", rw.statusCode)
+		HttpRequestsTotal.WithLabelValues(r.Method, r.URL.Path, status).Inc()
+		HttpRequestDuration.WithLabelValues(r.Method, r.URL.Path, status).Observe(duration)
 	})
 }

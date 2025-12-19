@@ -247,7 +247,7 @@ func (svc *Service) StartService() *http.Server {
 
 	server := &http.Server{
 		Addr:    svc.cfg.ListenAddr,
-		Handler: finalMux,
+		Handler: metricsMiddleware(finalMux),
 	}
 
 	log.Printf("Starting HTTP server on http://%s", svc.cfg.ListenAddr)
