@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lnliz/faucet.coinbin.org/btc"
 	"github.com/lnliz/faucet.coinbin.org/db"
 )
 
@@ -236,7 +237,7 @@ func (svc *Service) adminSendFundsHandler(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	if err := ValidateSignetAddress(req.Address); err != nil {
+	if err := btc.ValidateSignetAddress(req.Address); err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
@@ -258,7 +259,7 @@ func (svc *Service) adminSendFundsHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	fees := feeSatsPerVBLowerLimit * 1.10
+	fees := btc.FeeSatsPerVBLowerLimit * 1.10
 
 	txid, err := svc.rpcClient.SendToAddressWithOpReturn(
 		req.Address,

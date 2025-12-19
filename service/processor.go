@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lnliz/faucet.coinbin.org/btc"
 	"github.com/lnliz/faucet.coinbin.org/db"
 )
 
@@ -70,7 +71,7 @@ func (svc *Service) processBatch() {
 			continue
 		}
 
-		fees := feeSatsPerVBLowerLimit * 1.15
+		fees := btc.FeeSatsPerVBLowerLimit * 1.15
 		txid, err := svc.rpcClient.SendToAddressWithOpReturn(
 			tx.Address,
 			tx.AmountBTC,
@@ -123,14 +124,14 @@ func (svc *Service) ConsolidateUTXOs() (*ConsolidationResult, error) {
 		return utxos[i].Amount < utxos[j].Amount
 	})
 
-	var smallUTXOs []UTXO
+	var smallUTXOs []btc.UTXO
 	var totalAmount float64
 	for _, utxo := range utxos {
 		if utxo.Amount > svc.cfg.ConsolidationAmountThresholdBTC || !utxo.Spendable {
 			continue
 		}
 
-		if utxo.Amount < dustLimitBTC {
+		if utxo.Amount < btc.DustLimitBTC {
 			continue
 		}
 

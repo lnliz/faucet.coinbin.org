@@ -1,4 +1,4 @@
-package service
+package btc
 
 import (
 	"bytes"
@@ -65,10 +65,9 @@ type Balances struct {
 	Mine WalletBalance `json:"mine"`
 }
 
-const (
-	dustLimitBTC = 0.00001 // 1000 sats
-
-	feeSatsPerVBLowerLimit = 0.1
+var (
+	DustLimitBTC           = 0.00001 // 1000 sats
+	FeeSatsPerVBLowerLimit = 0.1
 )
 
 func NewBitcoinRPCClient(config *BitcoinRPCConfig) *BitcoinRPCClient {
@@ -153,7 +152,7 @@ func (c *BitcoinRPCClient) call(method string, params []any) (json.RawMessage, e
 
 func (c *BitcoinRPCClient) SendToAddressWithOpReturn(address string, amountBTC float64, feeRateSatsPerVB float64, opReturnData string) (string, error) {
 	log.Printf("Sending %.8f btc to %s  [fees=%.8f sats/vb]", amountBTC, address, feeRateSatsPerVB)
-	if amountBTC < dustLimitBTC {
+	if amountBTC < DustLimitBTC {
 		return "", fmt.Errorf("Amount too low")
 	}
 

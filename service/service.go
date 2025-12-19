@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lnliz/faucet.coinbin.org/btc"
 	"github.com/lnliz/faucet.coinbin.org/db"
 	"github.com/lnliz/go-turnstile"
 	"github.com/xlzd/gotp"
@@ -24,7 +25,7 @@ type Config struct {
 	ListenAddr                      string
 	MetricsAddr                     string
 	DataDir                         string
-	BitcoinRPC                      BitcoinRPCConfig
+	BitcoinRPC                      btc.BitcoinRPCConfig
 	BatchInterval                   time.Duration
 	MinAmountBTC                    float64
 	MaxAmountBTC                    float64
@@ -51,7 +52,7 @@ type Service struct {
 	walletBalance    float64
 	walletBalanceMtx sync.RWMutex
 
-	rpcClient *BitcoinRPCClient
+	rpcClient *btc.BitcoinRPCClient
 }
 
 const (
@@ -63,7 +64,7 @@ var (
 )
 
 func NewService(cfg *Config, database *gorm.DB) *Service {
-	rpcClient := NewBitcoinRPCClient(&cfg.BitcoinRPC)
+	rpcClient := btc.NewBitcoinRPCClient(&cfg.BitcoinRPC)
 
 	t := turnstile.NewTurnstileVerifier(cfg.TurnstileSecret)
 	t.HttpClient = &http.Client{Timeout: 2 * time.Second}

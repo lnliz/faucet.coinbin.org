@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/lnliz/faucet.coinbin.org/btc"
 	"github.com/lnliz/faucet.coinbin.org/db"
 )
 
@@ -66,7 +67,7 @@ func (svc *Service) submitHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := ValidateSignetAddress(req.Address); err != nil {
+	if err := btc.ValidateSignetAddress(req.Address); err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
