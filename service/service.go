@@ -40,6 +40,7 @@ type Config struct {
 	ConsolidationAmountThresholdBTC float64
 	MaxConsolidationUTXOs           int
 	MinConsolidationUTXOs           int
+	MaxWithdrawalsPerIP24h          int
 	AutoConsolidationInterval       time.Duration
 }
 

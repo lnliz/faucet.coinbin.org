@@ -50,6 +50,8 @@ func main() {
 	flag.IntVar(&cfg.MinConsolidationUTXOs, "consolidation-min-utxos", 2, "Minimum number of UTXOs required before consolidation runs")
 	flag.StringVar(&autoConsolidationIntervalStr, "auto-consolidation-interval", "", "Auto-consolidation interval (e.g., 5m, 1h) - disabled by default")
 
+	flag.IntVar(&cfg.MaxWithdrawalsPerIP24h, "max-withdrawals-per-ip-24h", 2, "Maximum number of withdrawals per IP per 24h")
+
 	flag.StringVar(&cfg.TurnstileSecret, "turnstile-secret", "", "Cloudflare Turnstile secret key (optional)")
 	flag.StringVar(&cfg.TurnstileSiteKey, "turnstile-site-key", "", "Cloudflare Turnstile site key (optional)")
 

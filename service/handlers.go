@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -96,10 +97,11 @@ func (svc *Service) submitHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if count >= 2 {
+		if count >= int64(svc.cfg.MaxWithdrawalsPerIP24h) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusTooManyRequests)
-			json.NewEncoder(w).Encode(map[string]string{"error": "Rate limit exceeded (max 2 per 24h)"})
+			msg := fmt.Sprintf("Rate limit exceeded (max %d per 24h)", svc.cfg.MaxWithdrawalsPerIP24h)
+			json.NewEncoder(w).Encode(map[string]string{"error": msg})
 			return
 		}
 	}
