@@ -134,7 +134,7 @@ func (svc *Service) adminIPAllowlistMiddleware(next http.Handler) http.Handler {
 		}
 
 		if !allowed {
-			log.Printf("Admin - denied access from %s", clientIP)
+			log.Printf("Admin - denied access, [ip=%s] [path=%s]", clientIP, r.URL.Path)
 			http.Error(w, "Access denied", http.StatusForbidden)
 			return
 		}
