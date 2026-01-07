@@ -81,7 +81,7 @@ func NewService(cfg *Config, database *gorm.DB) *Service {
 }
 
 func (svc *Service) renderTemplate(w http.ResponseWriter, templateName string, data interface{}) error {
-	tmpl, err := template.ParseGlob("templates/*")
+	tmpl, err := template.ParseGlob("templates/*.html")
 	if err != nil {
 		log.Printf("Failed to parse templates: %v", err)
 		return err

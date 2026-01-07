@@ -163,9 +163,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>Signet Bitcoin Faucet</h1>
-        <p class="subtitle">Get free signet coins for testing</p>
-        <p class="info-message">This faucet is open-source, you can find more information <a href="https://github.com/lnliz/faucet.coinbin.org" target="_blank">here</a></p>
+
+        {{template "header" .}}
 
         <form id="faucet-form">
             <div class="form-group">
@@ -192,10 +191,7 @@
 
         <div id="message" class="message"></div>
 
-        <div class="footer">
-            <p> wallet balance: {{printf "%.0f" .WalletBalance}} sBTC  || <a href="https://github.com/lnliz/faucet.coinbin.org" target="_blank">github repo</a> </p>
-            <p><a href="https://github.com/lnliz/faucet.coinbin.org/commit/{{.CommitHash}}" target="_blank">{{ .CommitHash }}</a> </p>
-        </div>
+{{template "footer" .}}
     </div>
 
     <script>
