@@ -229,6 +229,7 @@ func (svc *Service) getClientIP(r *http.Request) string {
 func (svc *Service) StartService() *http.Server {
 	mux := http.NewServeMux()
 
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	mux.HandleFunc("/", svc.indexHandler)
 	mux.HandleFunc("/api/submit", svc.submitHandler)
 	mux.HandleFunc("/health", svc.healthHandler)
