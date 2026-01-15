@@ -13,7 +13,7 @@ import (
 type Transaction struct {
 	ID           uint      `gorm:"primaryKey"`
 	CreatedAt    time.Time `gorm:"index"`
-	Address      string    `gorm:"uniqueIndex;not null"`
+	Address      string    `gorm:"index;not null"`
 	IPAddress    string    `gorm:"index"`
 	OnchainTxnID string    `gorm:"column:onchain_txn_id;index"`
 	AmountBTC    float64   `gorm:"not null;default:0"`
@@ -53,6 +53,8 @@ func InitDB(dataDir string) (*gorm.DB, error) {
 	if err := db.AutoMigrate(&Transaction{}, &AdminSession{}); err != nil {
 		return nil, err
 	}
+
+	db.Exec("DROP INDEX IF EXISTS idx_transactions_address")
 
 	return db, nil
 }

@@ -53,6 +53,7 @@ func main() {
 	flag.StringVar(&autoConsolidationIntervalStr, "auto-consolidation-interval", "", "Auto-consolidation interval (e.g., 5m, 1h) - disabled by default")
 
 	flag.IntVar(&cfg.MaxWithdrawalsPerIP24h, "max-withdrawals-per-ip-24h", 2, "Maximum number of withdrawals per IP per 24h")
+	flag.IntVar(&cfg.MaxDepositsPerAddress, "max-deposits-per-address", 5, "Maximum number of deposits per address")
 
 	flag.StringVar(&cfg.TurnstileSecret, "turnstile-secret", "", "Cloudflare Turnstile secret key (optional)")
 	flag.StringVar(&cfg.TurnstileSiteKey, "turnstile-site-key", "", "Cloudflare Turnstile site key (optional)")

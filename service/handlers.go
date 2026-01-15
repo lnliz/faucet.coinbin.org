@@ -120,6 +120,15 @@ func (svc *Service) submitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var addressCount int64
+	svc.db.Model(&db.Transaction{}).Where("address = ?", req.Address).Count(&addressCount)
+	if addressCount >= int64(svc.cfg.MaxDepositsPerAddress) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("Address limit reached (max %d)", svc.cfg.MaxDepositsPerAddress)})
+		return
+	}
+
 	rangeSats := int((amountRange.MaxBTC - amountRange.MinBTC) * 100_000_000)
 	randSats := rand.Intn(rangeSats)
 	amountBTC := amountRange.MinBTC + 0.00000001*float64(randSats)
@@ -132,12 +141,6 @@ func (svc *Service) submitHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := svc.db.Create(&tx).Error; err != nil {
-		if err.Error() == "UNIQUE constraint failed: transactions.address" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{"error": "Address already used"})
-			return
-		}
 		log.Printf("Failed to create transaction: %v", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)

@@ -53,6 +53,7 @@ type Config struct {
 	MaxConsolidationUTXOs           int
 	MinConsolidationUTXOs           int
 	MaxWithdrawalsPerIP24h          int
+	MaxDepositsPerAddress           int
 	AutoConsolidationInterval       time.Duration
 	EnabledAmountRanges             []int
 	DefaultAmountRange              int
