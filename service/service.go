@@ -21,14 +21,26 @@ import (
 	"gorm.io/gorm"
 )
 
+type AmountRange struct {
+	ID     int
+	MinBTC float64
+	MaxBTC float64
+	Label  string
+}
+
+var AllAmountRanges = []AmountRange{
+	{ID: 1, MinBTC: 0.001, MaxBTC: 0.009, Label: "0.001 - 0.009"},
+	{ID: 2, MinBTC: 0.01, MaxBTC: 0.09, Label: "0.01 - 0.09"},
+	{ID: 3, MinBTC: 0.1, MaxBTC: 0.9, Label: "0.1 - 0.9"},
+	{ID: 4, MinBTC: 1.0, MaxBTC: 2.0, Label: "1.0 - 2.0"},
+}
+
 type Config struct {
 	ListenAddr                      string
 	MetricsAddr                     string
 	DataDir                         string
 	BitcoinRPC                      btc.BitcoinRPCConfig
 	BatchInterval                   time.Duration
-	MinAmountBTC                    float64
-	MaxAmountBTC                    float64
 	MinBalance                      float64
 	TurnstileSecret                 string
 	TurnstileSiteKey                string
@@ -42,6 +54,8 @@ type Config struct {
 	MinConsolidationUTXOs           int
 	MaxWithdrawalsPerIP24h          int
 	AutoConsolidationInterval       time.Duration
+	EnabledAmountRanges             []int
+	DefaultAmountRange              int
 }
 
 type Service struct {
@@ -293,4 +307,30 @@ func (svc *Service) GetCachedWalletBalance() float64 {
 	svc.walletBalanceMtx.RLock()
 	defer svc.walletBalanceMtx.RUnlock()
 	return svc.walletBalance
+}
+
+func (svc *Service) GetEnabledAmountRanges() []AmountRange {
+	var ranges []AmountRange
+	for _, r := range AllAmountRanges {
+		for _, enabledID := range svc.cfg.EnabledAmountRanges {
+			if r.ID == enabledID {
+				ranges = append(ranges, r)
+				break
+			}
+		}
+	}
+	return ranges
+}
+
+func (svc *Service) GetAmountRangeByID(id int) *AmountRange {
+	for _, enabledID := range svc.cfg.EnabledAmountRanges {
+		if enabledID == id {
+			for _, r := range AllAmountRanges {
+				if r.ID == id {
+					return &r
+				}
+			}
+		}
+	}
+	return nil
 }

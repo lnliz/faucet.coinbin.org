@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -30,6 +31,7 @@ func (s *stringSlice) Set(value string) error {
 func main() {
 	var cfg service.Config
 	var adminIPAllowlist stringSlice
+	var enabledAmountRangesStr string
 	var batchIntervalStr string
 	var autoConsolidationIntervalStr string
 
@@ -42,8 +44,8 @@ func main() {
 	flag.StringVar(&cfg.BitcoinRPC.Password, "bitcoin-rpc-password", "", "Bitcoin RPC password")
 
 	flag.StringVar(&batchIntervalStr, "batch-interval", "1m", "Batch processing interval (e.g., 1m, 5m, 30s)")
-	flag.Float64Var(&cfg.MinAmountBTC, "min-amount", 0.0001, "Minimum send amount (BTC)")
-	flag.Float64Var(&cfg.MaxAmountBTC, "max-amount", 0.0009, "Maximum send amount (BTC)")
+	flag.StringVar(&enabledAmountRangesStr, "enabled-amount-ranges", "1,2,3", "Comma-separated amount ranges to enable (1=0.001-0.009, 2=0.01-0.09, 3=0.1-0.9, 4=1.0-2.0)")
+	flag.IntVar(&cfg.DefaultAmountRange, "default-amount-range", 2, "Default selected amount range (1-4)")
 	flag.Float64Var(&cfg.MinBalance, "min-balance", 0.1, "Minimum wallet balance threshold (BTC)")
 	flag.Float64Var(&cfg.ConsolidationAmountThresholdBTC, "consolidation-amount-threshold", 0.001, "UTXO consolidation threshold (BTC) - UTXOs smaller than this will be consolidated")
 	flag.IntVar(&cfg.MaxConsolidationUTXOs, "consolidation-max-utxos", 5, "Maximum number of UTXOs to consolidate in a single transaction")
@@ -67,14 +69,33 @@ func main() {
 		log.Fatal("invalid consolidation cfg, min: %d > max: %d", cfg.MinConsolidationUTXOs, cfg.MaxConsolidationUTXOs)
 	}
 
-	if cfg.MinAmountBTC > cfg.MaxAmountBTC {
-		log.Fatal("invalid cfg, min: %.8f > max: %.8f", cfg.MinAmountBTC, cfg.MaxAmountBTC)
-	}
-
 	if len(adminIPAllowlist) == 0 {
 		adminIPAllowlist = []string{"127.0.0.1"}
 	}
 	cfg.AdminIPAllowlist = adminIPAllowlist
+
+	for _, r := range strings.Split(enabledAmountRangesStr, ",") {
+		r = strings.TrimSpace(r)
+		if r == "" {
+			continue
+		}
+		rangeID, err := strconv.Atoi(r)
+		if err != nil || rangeID < 1 || rangeID > 4 {
+			log.Fatalf("Error: invalid -enabled-amount-ranges value: %s (must be 1-4)", r)
+		}
+		cfg.EnabledAmountRanges = append(cfg.EnabledAmountRanges, rangeID)
+	}
+
+	validDefault := false
+	for _, r := range cfg.EnabledAmountRanges {
+		if r == cfg.DefaultAmountRange {
+			validDefault = true
+			break
+		}
+	}
+	if !validDefault {
+		log.Fatalf("Error: -default-amount-range %d is not in enabled amount ranges", cfg.DefaultAmountRange)
+	}
 
 	if cfg.AdminPassword == "" {
 		log.Fatal("Error: -admin-password flag is required")
@@ -112,7 +133,7 @@ func main() {
 	log.Printf("Metrics address: %s", cfg.MetricsAddr)
 	log.Printf("Data directory: %s", cfg.DataDir)
 	log.Printf("Batch interval: %s", cfg.BatchInterval)
-	log.Printf("Send amount range: %.8f - %.8f BTC", cfg.MinAmountBTC, cfg.MaxAmountBTC)
+	log.Printf("Enabled amount ranges: %v (default: %d)", cfg.EnabledAmountRanges, cfg.DefaultAmountRange)
 	log.Printf("Admin path: %s", cfg.AdminPath)
 	if cfg.Admin2FASecret != "" {
 		log.Printf("2FA enabled for admin login and send funds")

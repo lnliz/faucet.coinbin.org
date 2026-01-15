@@ -14,9 +14,11 @@ import (
 
 func (svc *Service) indexHandler(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{
-		"TurnstileSiteKey": svc.cfg.TurnstileSiteKey,
-		"CommitHash":       CommitHash,
-		"WalletBalance":    svc.GetCachedWalletBalance(),
+		"TurnstileSiteKey":    svc.cfg.TurnstileSiteKey,
+		"CommitHash":          CommitHash,
+		"WalletBalance":       svc.GetCachedWalletBalance(),
+		"EnabledAmountRanges": svc.GetEnabledAmountRanges(),
+		"DefaultAmountRange":  svc.cfg.DefaultAmountRange,
 	}
 	if err := svc.renderTemplate(w, "index.html", data); err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -32,6 +34,7 @@ func (svc *Service) submitHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Address        string `json:"address"`
 		TurnstileToken string `json:"turnstile_token"`
+		AmountRange    int    `json:"amount_range"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -106,9 +109,20 @@ func (svc *Service) submitHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	rangeSats := int((svc.cfg.MaxAmountBTC - svc.cfg.MinAmountBTC) * 100_000_000)
+	amountRange := svc.GetAmountRangeByID(req.AmountRange)
+	if amountRange == nil {
+		amountRange = svc.GetAmountRangeByID(svc.cfg.DefaultAmountRange)
+	}
+	if amountRange == nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid amount range"})
+		return
+	}
+
+	rangeSats := int((amountRange.MaxBTC - amountRange.MinBTC) * 100_000_000)
 	randSats := rand.Intn(rangeSats)
-	amountBTC := svc.cfg.MinAmountBTC + 0.00000001*float64(randSats)
+	amountBTC := amountRange.MinBTC + 0.00000001*float64(randSats)
 
 	tx := db.Transaction{
 		Address:   req.Address,
