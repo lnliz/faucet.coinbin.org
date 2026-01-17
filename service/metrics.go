@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"runtime"
 	"time"
 
 	"github.com/lnliz/faucet.coinbin.org/db"
@@ -14,6 +15,14 @@ import (
 )
 
 var (
+	FaucetBuildInfo = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "faucet_build_info",
+			Help: "Faucet build information",
+		},
+		[]string{"sha", "go_version"},
+	)
+
 	MetricFaucetTransactionCount = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "faucet_transactions_count",
@@ -107,6 +116,8 @@ func (svc *Service) CollectMetrics() {
 }
 
 func (svc *Service) StartMetricsHttpServer() {
+	FaucetBuildInfo.WithLabelValues(CommitHash, runtime.Version()).Set(1)
+
 	go func() {
 		http.Handle("/metrics", svc.MetricsHandler())
 		log.Printf("Starting metrics server: http://%s/metrics", svc.cfg.MetricsAddr)
