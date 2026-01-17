@@ -28,6 +28,13 @@ func (s *stringSlice) Set(value string) error {
 	return nil
 }
 
+func getEnvOrFlag(flagVal, envName string) string {
+	if flagVal != "" {
+		return flagVal
+	}
+	return os.Getenv(envName)
+}
+
 func main() {
 	var cfg service.Config
 	var adminIPAllowlist stringSlice
@@ -59,12 +66,24 @@ func main() {
 	flag.StringVar(&cfg.TurnstileSiteKey, "turnstile-site-key", "", "Cloudflare Turnstile site key (optional)")
 
 	flag.StringVar(&cfg.AdminPassword, "admin-password", "", "Admin dashboard password (required)")
-	flag.StringVar(&cfg.AdminPath, "admin-path", "/admin", "Admin dashboard URL path")
+	flag.StringVar(&cfg.AdminPath, "admin-path", "", "Admin dashboard URL path (default: /admin)")
 	flag.StringVar(&cfg.AdminCookieSecret, "admin-cookie-secret", "", "Admin cookie signing secret (required, 32+ chars)")
 	flag.StringVar(&cfg.Admin2FASecret, "admin-2fa-secret", "", "Admin 2FA TOTP secret (optional, base32 encoded)")
 	flag.Var(&adminIPAllowlist, "admin-ip", "Allowed IP for admin access (can be specified multiple times, default: 127.0.0.1)")
 
 	flag.Parse()
+
+	cfg.BitcoinRPC.User = getEnvOrFlag(cfg.BitcoinRPC.User, "FAUCET_BITCOIN_RPC_USER")
+	cfg.BitcoinRPC.Password = getEnvOrFlag(cfg.BitcoinRPC.Password, "FAUCET_BITCOIN_RPC_PASSWORD")
+	cfg.TurnstileSecret = getEnvOrFlag(cfg.TurnstileSecret, "FAUCET_TURNSTILE_SECRET")
+	cfg.TurnstileSiteKey = getEnvOrFlag(cfg.TurnstileSiteKey, "FAUCET_TURNSTILE_SITE_KEY")
+	cfg.AdminPassword = getEnvOrFlag(cfg.AdminPassword, "FAUCET_ADMIN_PASSWORD")
+	cfg.AdminPath = getEnvOrFlag(cfg.AdminPath, "FAUCET_ADMIN_PATH")
+	if cfg.AdminPath == "" {
+		cfg.AdminPath = "/admin"
+	}
+	cfg.AdminCookieSecret = getEnvOrFlag(cfg.AdminCookieSecret, "FAUCET_ADMIN_COOKIE_SECRET")
+	cfg.Admin2FASecret = getEnvOrFlag(cfg.Admin2FASecret, "FAUCET_ADMIN_2FA_SECRET")
 
 	if cfg.MinConsolidationUTXOs > cfg.MaxConsolidationUTXOs {
 		log.Fatal("invalid consolidation cfg, min: %d > max: %d", cfg.MinConsolidationUTXOs, cfg.MaxConsolidationUTXOs)
@@ -99,19 +118,19 @@ func main() {
 	}
 
 	if cfg.AdminPassword == "" {
-		log.Fatal("Error: -admin-password flag is required")
+		log.Fatal("Error: admin password required (use -admin-password or FAUCET_ADMIN_PASSWORD)")
 	}
 	if cfg.AdminCookieSecret == "" {
-		log.Fatal("Error: -admin-cookie-secret flag is required")
+		log.Fatal("Error: admin cookie secret required (use -admin-cookie-secret or FAUCET_ADMIN_COOKIE_SECRET)")
 	}
 	if len(cfg.AdminCookieSecret) < 32 {
-		log.Fatal("Error: -admin-cookie-secret must be at least 32 characters")
+		log.Fatal("Error: admin cookie secret must be at least 32 characters")
 	}
 	if cfg.BitcoinRPC.User == "" {
-		log.Fatal("Error: -bitcoin-rpc-user flag is required")
+		log.Fatal("Error: bitcoin RPC user required (use -bitcoin-rpc-user or FAUCET_BITCOIN_RPC_USER)")
 	}
 	if cfg.BitcoinRPC.Password == "" {
-		log.Fatal("Error: -bitcoin-rpc-password flag is required")
+		log.Fatal("Error: bitcoin RPC password required (use -bitcoin-rpc-password or FAUCET_BITCOIN_RPC_PASSWORD)")
 	}
 
 	batchInterval, err := time.ParseDuration(batchIntervalStr)

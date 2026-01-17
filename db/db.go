@@ -53,9 +53,7 @@ func InitDB(dataDir string) (*gorm.DB, error) {
 	if err := db.AutoMigrate(&Transaction{}, &AdminSession{}); err != nil {
 		return nil, err
 	}
-
-	db.Exec("DROP INDEX IF EXISTS idx_transactions_address")
-
+	
 	return db, nil
 }
 
