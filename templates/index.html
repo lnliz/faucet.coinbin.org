@@ -105,6 +105,7 @@
         button {
             width: 100%;
             padding: 14px;
+            margin-bottom: 40px;
             background: #f7931a;
             color: #1a1a1a;
             border: none;
@@ -126,11 +127,18 @@
         }
 
         .message {
-            margin-top: 20px;
+            margin-top: 0px;
+            margin-bottom: 50px;
             padding: 15px;
             border-radius: 5px;
             display: none;
             font-size: 14px;
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .message.fade-out {
+            opacity: 0;
         }
 
         .message.success {
@@ -239,7 +247,9 @@
             </div>
 
             <button type="submit" id="submit-btn" {{if .TurnstileSiteKey}}disabled{{end}}>Request Coins</button>
-            <br><br><br>
+            <br>
+            <div id="message" class="message"></div>
+
             {{if .TurnstileSiteKey}}
             <div class="turnstile-wrapper">
                 <div class="cf-turnstile" data-sitekey="{{.TurnstileSiteKey}}" data-theme="dark" data-callback="onTurnstileSuccess"></div>
@@ -247,8 +257,6 @@
             {{end}}
 
         </form>
-
-        <div id="message" class="message"></div>
 
 {{template "footer" .}}
     </div>
@@ -338,8 +346,12 @@
             messageDiv.style.display = 'block';
 
             setTimeout(() => {
-                messageDiv.style.display = 'none';
-            }, 10000);
+                messageDiv.classList.add('fade-out');
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                    messageDiv.classList.remove('fade-out');
+                }, 500);
+            }, 15000);
         }
     </script>
 </body>
