@@ -441,7 +441,9 @@ func (c *BitcoinRPCClient) ListUnspent(minConf, maxConf int) ([]UTXO, error) {
 }
 
 var (
-	bech32Regex = regexp.MustCompile(`^tb1[a-z0-9]{39,87}$`)
+	bech32Regex  = regexp.MustCompile(`^tb1[a-z0-9]{39,87}$`)
+	p2shRegex    = regexp.MustCompile(`^2[a-km-zA-HJ-NP-Z1-9]{25,34}$`)
+	p2pkhRegex   = regexp.MustCompile(`^[mn][a-km-zA-HJ-NP-Z1-9]{25,34}$`)
 )
 
 func ValidateSignetAddress(address string) error {
@@ -455,9 +457,9 @@ func ValidateSignetAddress(address string) error {
 		return fmt.Errorf("mainnet address?")
 	}
 
-	if !bech32Regex.MatchString(address) {
-		return fmt.Errorf("invalid signet address format, must be bech32 (tb1...)")
+	if bech32Regex.MatchString(address) || p2shRegex.MatchString(address) || p2pkhRegex.MatchString(address) {
+		return nil
 	}
 
-	return nil
+	return fmt.Errorf("invalid signet address format")
 }
