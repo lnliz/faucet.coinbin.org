@@ -49,6 +49,7 @@ func main() {
 	flag.StringVar(&cfg.BitcoinRPC.Host, "bitcoin-rpc-host", "localhost:38332", "Bitcoin Signet RPC host")
 	flag.StringVar(&cfg.BitcoinRPC.User, "bitcoin-rpc-user", "", "Bitcoin RPC username")
 	flag.StringVar(&cfg.BitcoinRPC.Password, "bitcoin-rpc-password", "", "Bitcoin RPC password")
+	flag.StringVar(&cfg.BitcoinCoreWalletName, "bitcoin-wallet-name", "faucet", "Bitcoin wallet name, will be loaded at start")
 
 	flag.StringVar(&batchIntervalStr, "batch-interval", "1m", "Batch processing interval (e.g., 1m, 5m, 30s)")
 	flag.StringVar(&enabledAmountRangesStr, "enabled-amount-ranges", "1,2,3", "Comma-separated amount ranges to enable (1=0.001-0.009, 2=0.01-0.09, 3=0.1-0.9, 4=1.0-2.0)")
@@ -86,7 +87,7 @@ func main() {
 	cfg.Admin2FASecret = getEnvOrFlag(cfg.Admin2FASecret, "FAUCET_ADMIN_2FA_SECRET")
 
 	if cfg.MinConsolidationUTXOs > cfg.MaxConsolidationUTXOs {
-		log.Fatal("invalid consolidation cfg, min: %d > max: %d", cfg.MinConsolidationUTXOs, cfg.MaxConsolidationUTXOs)
+		log.Fatalf("invalid consolidation cfg, min: %d > max: %d", cfg.MinConsolidationUTXOs, cfg.MaxConsolidationUTXOs)
 	}
 
 	if len(adminIPAllowlist) == 0 {
@@ -167,9 +168,10 @@ func main() {
 
 	svc := service.NewService(&cfg, database)
 
-	if err := svc.CheckBitcoinConnection(); err != nil {
+	if err := svc.CheckAndLoadBitcoinCoreWallet(); err != nil {
 		log.Fatalf("Bitcoin RPC connection failed: %v", err)
 	}
+	log.Printf("Bitcoin RPC connection verified, wallet [%s] loaded", cfg.BitcoinCoreWalletName)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	var wg sync.WaitGroup

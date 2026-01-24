@@ -40,6 +40,7 @@ type Config struct {
 	MetricsAddr                     string
 	DataDir                         string
 	BitcoinRPC                      btc.BitcoinRPCConfig
+	BitcoinCoreWalletName           string
 	BatchInterval                   time.Duration
 	MinBalance                      float64
 	TurnstileSecret                 string
@@ -71,10 +72,6 @@ type Service struct {
 	rpcClient *btc.BitcoinRPCClient
 }
 
-const (
-	walletName = "faucet"
-)
-
 var (
 	CommitHash = "<<dev>>"
 )
@@ -91,7 +88,7 @@ func NewService(cfg *Config, database *gorm.DB) *Service {
 		turnstile: t,
 		totp:      gotp.NewDefaultTOTP(strings.ToUpper(strings.TrimSpace(cfg.Admin2FASecret))),
 
-		rpcClient: rpcClient.WithWallet(walletName),
+		rpcClient: rpcClient.WithWallet(cfg.BitcoinCoreWalletName),
 	}
 }
 
@@ -110,7 +107,7 @@ func (svc *Service) renderTemplate(w http.ResponseWriter, templateName string, d
 	return nil
 }
 
-func (svc *Service) CheckBitcoinConnection() error {
+func (svc *Service) CheckAndLoadBitcoinCoreWallet() error {
 	wallets, err := svc.rpcClient.ListWallets()
 	if err != nil {
 		return fmt.Errorf("failed to list wallets: %w", err)
@@ -118,21 +115,23 @@ func (svc *Service) CheckBitcoinConnection() error {
 
 	faucetWalletFound := false
 	for _, wallet := range wallets {
-		if wallet == walletName {
+		if wallet == svc.cfg.BitcoinCoreWalletName {
 			faucetWalletFound = true
 			break
 		}
 	}
 
 	if !faucetWalletFound {
-		log.Printf("'%s' wallet not loaded, attempting to load it...", walletName)
-		if err := svc.rpcClient.LoadWallet(walletName); err != nil {
-			return fmt.Errorf("'%s' wallet not found or failed to load - please create it with: bitcoin-cli -signet createwallet %s (error: %v)", walletName, walletName, err)
+		log.Printf("'%s' wallet not loaded, attempting to load it...", svc.cfg.BitcoinCoreWalletName)
+		if err := svc.rpcClient.LoadWallet(svc.cfg.BitcoinCoreWalletName); err != nil {
+			return fmt.Errorf("'%s' wallet not found or failed to load - please create it with: bitcoin-cli -signet createwallet %s (error: %v)",
+				svc.cfg.BitcoinCoreWalletName,
+				svc.cfg.BitcoinCoreWalletName,
+				err)
 		}
-		log.Printf("'%s' wallet loaded successfully", walletName)
+		log.Printf("'%s' wallet loaded successfully", svc.cfg.BitcoinCoreWalletName)
 	}
 
-	log.Println("Bitcoin RPC connection verified, 'faucet' wallet loaded")
 	return nil
 }
 

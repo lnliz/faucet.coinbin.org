@@ -159,13 +159,31 @@ func (svc *Service) submitHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (svc *Service) healthHandler(w http.ResponseWriter, r *http.Request) {
+	/*
+	 check blockchain
+	*/
 	if _, err := svc.rpcClient.GetBlockchainInfo(); err != nil {
+		log.Printf("Health check: GetBlockchainInfo() err: %v", err)
 		w.WriteHeader(http.StatusServiceUnavailable)
 		w.Write([]byte("unhealthy"))
 		return
 	}
 
+	/*
+	 check wallet
+	*/
+	if err := svc.CheckAndLoadBitcoinCoreWallet(); err != nil {
+		log.Printf("Health check: CheckAndLoadBitcoinCoreWallet() err: %v", err)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		w.Write([]byte("unhealthy"))
+		return
+	}
+
+	/*
+	 check DB
+	*/
 	if err := svc.db.Exec("SELECT 1").Error; err != nil {
+		log.Printf("Health check: db access err: %v", err)
 		w.WriteHeader(http.StatusServiceUnavailable)
 		w.Write([]byte("unhealthy"))
 		return
