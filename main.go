@@ -4,9 +4,11 @@ import (
 	"context"
 	"flag"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -37,7 +39,8 @@ func getEnvOrFlag(flagVal, envName string) string {
 
 func main() {
 	var cfg service.Config
-	var adminIPAllowlist stringSlice
+	var adminAllowlistIP stringSlice
+	var adminAllowlistCIDR stringSlice
 	var enabledAmountRangesStr string
 	var batchIntervalStr string
 	var autoConsolidationIntervalStr string
@@ -70,7 +73,8 @@ func main() {
 	flag.StringVar(&cfg.AdminPath, "admin-path", "", "Admin dashboard URL path (default: /admin)")
 	flag.StringVar(&cfg.AdminCookieSecret, "admin-cookie-secret", "", "Admin cookie signing secret (required, 32+ chars)")
 	flag.StringVar(&cfg.Admin2FASecret, "admin-2fa-secret", "", "Admin 2FA TOTP secret (optional, base32 encoded)")
-	flag.Var(&adminIPAllowlist, "admin-ip", "Allowed IP for admin access (can be specified multiple times, default: 127.0.0.1)")
+	flag.Var(&adminAllowlistIP, "admin-ip", "Allowed IP for admin access (can be specified multiple times, default: 127.0.0.1)")
+	flag.Var(&adminAllowlistCIDR, "admin-cidr", "Allowed CIDR for admin access (e.g. 192.168.1.0/24, can be specified multiple times)")
 
 	flag.Parse()
 
@@ -90,12 +94,25 @@ func main() {
 		log.Fatalf("invalid consolidation cfg, min: %d > max: %d", cfg.MinConsolidationUTXOs, cfg.MaxConsolidationUTXOs)
 	}
 
-	if len(adminIPAllowlist) == 0 {
-		adminIPAllowlist = []string{"127.0.0.1"}
+	if len(adminAllowlistIP) == 0 && len(adminAllowlistCIDR) == 0 {
+		adminAllowlistIP = []string{"127.0.0.1"}
 	}
-	cfg.AdminIPAllowlist = adminIPAllowlist
+	for _, ip := range adminAllowlistIP {
+		_, ipNet, err := net.ParseCIDR(ip + "/32")
+		if err != nil {
+			log.Fatalf("Error: invalid -admin-ip value: %s (%v)", ip, err)
+		}
+		cfg.AdminAllowlist = append(cfg.AdminAllowlist, *ipNet)
+	}
+	for _, cidr := range adminAllowlistCIDR {
+		_, ipNet, err := net.ParseCIDR(cidr)
+		if err != nil {
+			log.Fatalf("Error: invalid -admin-cidr value: %s (%v)", cidr, err)
+		}
+		cfg.AdminAllowlist = append(cfg.AdminAllowlist, *ipNet)
+	}
 
-	for _, r := range strings.Split(enabledAmountRangesStr, ",") {
+	for r := range strings.SplitSeq(enabledAmountRangesStr, ",") {
 		r = strings.TrimSpace(r)
 		if r == "" {
 			continue
@@ -107,13 +124,7 @@ func main() {
 		cfg.EnabledAmountRanges = append(cfg.EnabledAmountRanges, rangeID)
 	}
 
-	validDefault := false
-	for _, r := range cfg.EnabledAmountRanges {
-		if r == cfg.DefaultAmountRange {
-			validDefault = true
-			break
-		}
-	}
+	validDefault := slices.Contains(cfg.EnabledAmountRanges, cfg.DefaultAmountRange)
 	if !validDefault {
 		log.Fatalf("Error: -default-amount-range %d is not in enabled amount ranges", cfg.DefaultAmountRange)
 	}

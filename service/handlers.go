@@ -78,15 +78,7 @@ func (svc *Service) submitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isAdminIP := false
-	for _, allowedIP := range svc.cfg.AdminIPAllowlist {
-		if clientIP == allowedIP {
-			isAdminIP = true
-			break
-		}
-	}
-
-	if !isAdminIP {
+	if !svc.isAdminIP(clientIP) {
 		var count int64
 		cutoff := time.Now().Add(-24 * time.Hour)
 

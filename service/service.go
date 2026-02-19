@@ -48,7 +48,7 @@ type Config struct {
 	AdminPassword                   string
 	AdminPath                       string
 	AdminCookieSecret               string
-	AdminIPAllowlist                []string
+	AdminAllowlist                  []net.IPNet
 	Admin2FASecret                  string
 	ConsolidationAmountThresholdBTC float64
 	MaxConsolidationUTXOs           int
@@ -135,19 +135,24 @@ func (svc *Service) CheckAndLoadBitcoinCoreWallet() error {
 	return nil
 }
 
+func (svc *Service) isAdminIP(clientIP string) bool {
+	ip := net.ParseIP(clientIP)
+	if ip == nil {
+		return false
+	}
+	for _, cidr := range svc.cfg.AdminAllowlist {
+		if cidr.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+
 func (svc *Service) adminIPAllowlistMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		clientIP := svc.getClientIP(r)
 
-		allowed := false
-		for _, allowedIP := range svc.cfg.AdminIPAllowlist {
-			if clientIP == allowedIP {
-				allowed = true
-				break
-			}
-		}
-
-		if !allowed {
+		if !svc.isAdminIP(clientIP) {
 			log.Printf("Admin - denied access, [ip=%s] [path=%s]", clientIP, r.URL.Path)
 			http.Error(w, "Access denied", http.StatusForbidden)
 			return
