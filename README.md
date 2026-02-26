@@ -2,7 +2,7 @@
 
 try now at [faucet.coinbin.org](https://faucet.coinbin.org/)
 
-<img width="838" height="587" alt="image" src="https://github.com/user-attachments/assets/ab4cdf43-1d44-4912-adaa-7f3bf758fe19" />
+<img width="636" height="456" alt="image" src="https://github.com/user-attachments/assets/98170a2d-302c-4056-a9c0-6831ef4dbcfb" />
 
 
 
