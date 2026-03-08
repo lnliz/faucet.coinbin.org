@@ -244,7 +244,12 @@ func (svc *Service) StartService() *http.Server {
 	mux := http.NewServeMux()
 
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	mux.HandleFunc("/", svc.indexHandler)
+	mux.HandleFunc("GET /{$}", svc.indexHandler)
+
+	// catch-all for unmatched routes, return 404
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.NotFound(w, r)
+	})
 	mux.HandleFunc("/api/submit", svc.submitHandler)
 	mux.HandleFunc("/health", svc.healthHandler)
 

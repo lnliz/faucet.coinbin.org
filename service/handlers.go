@@ -13,11 +13,6 @@ import (
 )
 
 func (svc *Service) indexHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
-		return
-	}
-
 	data := map[string]any{
 		"TurnstileSiteKey":    svc.cfg.TurnstileSiteKey,
 		"CommitHash":          CommitHash,

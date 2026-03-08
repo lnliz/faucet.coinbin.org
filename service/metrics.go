@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/lnliz/faucet.coinbin.org/db"
@@ -144,6 +145,23 @@ func (rw *responseWriter) WriteHeader(code int) {
 	rw.ResponseWriter.WriteHeader(code)
 }
 
+func normalizeMetricsPath(path string, statusCode int) string {
+	if statusCode == http.StatusNotFound {
+		return "/"
+	}
+
+	switch path {
+	case "/", "/api/submit", "/health":
+		return path
+	}
+
+	if strings.HasPrefix(path, "/static/") {
+		return "/static/"
+	}
+
+	return path
+}
+
 func metricsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -151,7 +169,8 @@ func metricsMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(rw, r)
 		duration := time.Since(start).Seconds()
 		status := fmt.Sprintf("%d", rw.statusCode)
-		HttpRequestsTotal.WithLabelValues(r.Method, r.URL.Path, status).Inc()
-		HttpRequestDuration.WithLabelValues(r.Method, r.URL.Path, status).Observe(duration)
+		metricPath := normalizeMetricsPath(r.URL.Path, rw.statusCode)
+		HttpRequestsTotal.WithLabelValues(r.Method, metricPath, status).Inc()
+		HttpRequestDuration.WithLabelValues(r.Method, metricPath, status).Observe(duration)
 	})
 }
