@@ -10,6 +10,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -92,7 +93,7 @@ func NewService(cfg *Config, database *gorm.DB) *Service {
 	}
 }
 
-func (svc *Service) renderTemplate(w http.ResponseWriter, templateName string, data interface{}) error {
+func (svc *Service) renderTemplate(w http.ResponseWriter, templateName string, data any) error {
 	tmpl, err := template.ParseGlob("templates/*.html")
 	if err != nil {
 		log.Printf("Failed to parse templates: %v", err)
@@ -113,13 +114,7 @@ func (svc *Service) CheckAndLoadBitcoinCoreWallet() error {
 		return fmt.Errorf("failed to list wallets: %w", err)
 	}
 
-	faucetWalletFound := false
-	for _, wallet := range wallets {
-		if wallet == svc.cfg.BitcoinCoreWalletName {
-			faucetWalletFound = true
-			break
-		}
-	}
+	faucetWalletFound := slices.Contains(wallets, svc.cfg.BitcoinCoreWalletName)
 
 	if !faucetWalletFound {
 		log.Printf("'%s' wallet not loaded, attempting to load it...", svc.cfg.BitcoinCoreWalletName)
@@ -285,9 +280,7 @@ func (svc *Service) StartBalanceRefresher(ctx context.Context, wg *sync.WaitGrou
 	// init once so balance is not empty
 	svc.walletBalance = svc.GetAvailableWalletBalance()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 
@@ -305,7 +298,7 @@ func (svc *Service) StartBalanceRefresher(ctx context.Context, wg *sync.WaitGrou
 				}
 			}
 		}
-	}()
+	})
 }
 
 func (svc *Service) GetCachedWalletBalance() float64 {
@@ -317,11 +310,8 @@ func (svc *Service) GetCachedWalletBalance() float64 {
 func (svc *Service) GetEnabledAmountRanges() []AmountRange {
 	var ranges []AmountRange
 	for _, r := range AllAmountRanges {
-		for _, enabledID := range svc.cfg.EnabledAmountRanges {
-			if r.ID == enabledID {
-				ranges = append(ranges, r)
-				break
-			}
+		if slices.Contains(svc.cfg.EnabledAmountRanges, r.ID) {
+			ranges = append(ranges, r)
 		}
 	}
 	return ranges

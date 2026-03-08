@@ -19,9 +19,7 @@ const (
 func (svc *Service) StartBatchProcessor(ctx context.Context, wg *sync.WaitGroup) {
 	log.Printf("Starting batch processor with interval: %s", svc.cfg.BatchInterval)
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		ticker := time.NewTicker(svc.cfg.BatchInterval)
 		defer ticker.Stop()
 
@@ -34,7 +32,7 @@ func (svc *Service) StartBatchProcessor(ctx context.Context, wg *sync.WaitGroup)
 				svc.processBatch()
 			}
 		}
-	}()
+	})
 }
 
 func (svc *Service) processBatch() {
@@ -81,7 +79,7 @@ func (svc *Service) processBatch() {
 
 		if err != nil {
 			log.Printf("Failed to send to %s: %v", tx.Address, err)
-			if err := svc.db.Model(&tx).Updates(map[string]interface{}{
+			if err := svc.db.Model(&tx).Updates(map[string]any{
 				"status":    db.TxnStatusFailed,
 				"error_msg": err.Error(),
 			}).Error; err != nil {
@@ -91,7 +89,7 @@ func (svc *Service) processBatch() {
 			continue
 		}
 
-		if err := svc.db.Model(&tx).Updates(map[string]interface{}{
+		if err := svc.db.Model(&tx).Updates(map[string]any{
 			"status":         db.TxnStatusBroadcast,
 			"onchain_txn_id": txid,
 		}).Error; err != nil {
@@ -183,9 +181,7 @@ func (svc *Service) ConsolidateUTXOs() (*ConsolidationResult, error) {
 func (svc *Service) StartAutoConsolidation(ctx context.Context, wg *sync.WaitGroup) {
 	log.Printf("Starting auto-consolidation with interval: %s", svc.cfg.AutoConsolidationInterval)
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		ticker := time.NewTicker(svc.cfg.AutoConsolidationInterval)
 		defer ticker.Stop()
 
@@ -203,5 +199,5 @@ func (svc *Service) StartAutoConsolidation(ctx context.Context, wg *sync.WaitGro
 				log.Printf("Consolidation result: %#v", result)
 			}
 		}
-	}()
+	})
 }

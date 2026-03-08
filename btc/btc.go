@@ -278,13 +278,13 @@ func (c *BitcoinRPCClient) LoadWallet(walletName string) error {
 }
 
 func (c *BitcoinRPCClient) Consolidate(inputs []UTXO, totalAmountBTC float64, address string, opReturnData string) (string, error) {
-	var txInputs []map[string]interface{}
+	var txInputs []map[string]any
 	sort.Slice(inputs, func(i, j int) bool {
 		return inputs[i].Amount > inputs[j].Amount
 	})
 
 	for _, input := range inputs {
-		i := map[string]interface{}{
+		i := map[string]any{
 			"txid": input.TxID,
 			"vout": input.Vout,
 		}
@@ -441,9 +441,9 @@ func (c *BitcoinRPCClient) ListUnspent(minConf, maxConf int) ([]UTXO, error) {
 }
 
 var (
-	bech32Regex  = regexp.MustCompile(`^tb1[a-z0-9]{39,87}$`)
-	p2shRegex    = regexp.MustCompile(`^2[a-km-zA-HJ-NP-Z1-9]{25,34}$`)
-	p2pkhRegex   = regexp.MustCompile(`^[mn][a-km-zA-HJ-NP-Z1-9]{25,34}$`)
+	bech32Regex = regexp.MustCompile(`^tb1[a-z0-9]{39,87}$`)
+	p2shRegex   = regexp.MustCompile(`^2[a-km-zA-HJ-NP-Z1-9]{25,34}$`)
+	p2pkhRegex  = regexp.MustCompile(`^[mn][a-km-zA-HJ-NP-Z1-9]{25,34}$`)
 )
 
 func ValidateSignetAddress(address string) error {

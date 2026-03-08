@@ -24,4 +24,5 @@ Thumbs.db
 notes.txt
 *.log
 
-
+coverage.out
+coverage.html

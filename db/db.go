@@ -53,7 +53,7 @@ func InitDB(dataDir string) (*gorm.DB, error) {
 	if err := db.AutoMigrate(&Transaction{}, &AdminSession{}); err != nil {
 		return nil, err
 	}
-	
+
 	return db, nil
 }
 

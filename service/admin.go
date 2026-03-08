@@ -18,7 +18,7 @@ const (
 
 func (svc *Service) adminLoginPageHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		data := map[string]interface{}{
+		data := map[string]any{
 			"Require2FA": svc.cfg.Admin2FASecret != "",
 		}
 		if err := svc.renderTemplate(w, "admin_login.html", data); err != nil {
@@ -37,7 +37,7 @@ func (svc *Service) adminLoginPageHandler(w http.ResponseWriter, r *http.Request
 
 func (svc *Service) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		data := map[string]interface{}{
+		data := map[string]any{
 			"Error":      "Invalid request",
 			"Require2FA": svc.cfg.Admin2FASecret != "",
 		}
@@ -50,7 +50,7 @@ func (svc *Service) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 	totpCode := r.FormValue("totp_code")
 
 	if password != svc.cfg.AdminPassword {
-		data := map[string]interface{}{
+		data := map[string]any{
 			"Error":      "Invalid password",
 			"Require2FA": svc.cfg.Admin2FASecret != "",
 		}
@@ -61,7 +61,7 @@ func (svc *Service) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	if svc.cfg.Admin2FASecret != "" {
 		if totpCode == "" {
-			data := map[string]interface{}{
+			data := map[string]any{
 				"Error":      "2FA code required",
 				"Require2FA": true,
 			}
@@ -71,7 +71,7 @@ func (svc *Service) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if !svc.totp.Verify(totpCode, time.Now().Unix()) {
-			data := map[string]interface{}{
+			data := map[string]any{
 				"Error":      "Invalid 2FA code",
 				"Require2FA": true,
 			}
@@ -93,7 +93,7 @@ func (svc *Service) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := svc.db.Create(&session).Error; err != nil {
 		log.Printf("Failed to create admin session: %v", err)
-		data := map[string]interface{}{
+		data := map[string]any{
 			"Error": "Failed to create session",
 		}
 		w.WriteHeader(http.StatusInternalServerError)
@@ -151,7 +151,7 @@ func (svc *Service) adminDashboardHandler(w http.ResponseWriter, r *http.Request
 		log.Printf("Failed to get transactions: %v", err)
 	}
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"BalanceTrusted":                  balances.Mine.Trusted,
 		"BalancePending":                  balances.Mine.Untrusted,
 		"BalanceImmature":                 balances.Mine.Immature,
@@ -184,7 +184,7 @@ func (svc *Service) adminGetBalanceHandler(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"trusted":  balances.Mine.Trusted,
 		"pending":  balances.Mine.Untrusted,
 		"immature": balances.Mine.Immature,
@@ -280,7 +280,7 @@ func (svc *Service) adminSendFundsHandler(w http.ResponseWriter, r *http.Request
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"txid":    txid,
 		"message": "Transaction sent successfully",
@@ -309,7 +309,7 @@ func (svc *Service) adminGetUTXOsHandler(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"utxos": utxos,
 	})
 }
@@ -353,7 +353,7 @@ func (svc *Service) adminConsolidateUTXOsHandler(w http.ResponseWriter, r *http.
 
 	if result.SkipReason != "" {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"message": result.SkipReason,
 			"count":   result.Count,
 		})
@@ -361,7 +361,7 @@ func (svc *Service) adminConsolidateUTXOsHandler(w http.ResponseWriter, r *http.
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"txid":    result.TxID,
 		"count":   result.Count,
