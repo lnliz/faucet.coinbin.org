@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"log"
+	"net"
 	"net/http"
 	"sort"
 	"time"
@@ -168,6 +169,10 @@ func (svc *Service) adminDashboardHandler(w http.ResponseWriter, r *http.Request
 		"MaxConsolidationUTXOs":           svc.cfg.MaxConsolidationUTXOs,
 		"MinConsolidationUTXOs":           svc.cfg.MinConsolidationUTXOs,
 		"AutoConsolidationInterval":       svc.cfg.AutoConsolidationInterval,
+		"MaxWithdrawalsPerIP24h":          svc.cfg.MaxWithdrawalsPerIP24h,
+		"MaxDepositsPerAddress":           svc.cfg.MaxDepositsPerAddress,
+		"AdminAllowlist":                  formatCIDRs(svc.cfg.AdminAllowlist),
+		"BatchInterval":                   svc.cfg.BatchInterval,
 	}
 
 	if err := svc.renderTemplate(w, "admin_dashboard.html", data); err != nil {
@@ -369,4 +374,12 @@ func (svc *Service) adminConsolidateUTXOsHandler(w http.ResponseWriter, r *http.
 		"address": result.Address,
 		"message": result.Message,
 	})
+}
+
+func formatCIDRs(nets []net.IPNet) []string {
+	out := make([]string, len(nets))
+	for i, n := range nets {
+		out[i] = n.String()
+	}
+	return out
 }

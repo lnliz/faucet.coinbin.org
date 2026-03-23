@@ -17,6 +17,7 @@ func (svc *Service) indexHandler(w http.ResponseWriter, r *http.Request) {
 		"TurnstileSiteKey":    svc.cfg.TurnstileSiteKey,
 		"CommitHash":          CommitHash,
 		"WalletBalance":       svc.GetCachedWalletBalance(),
+		"TotalDistributed":    db.GetTotalAmountSentBTC(svc.db),
 		"EnabledAmountRanges": svc.GetEnabledAmountRanges(),
 		"DefaultAmountRange":  svc.cfg.DefaultAmountRange,
 	}
