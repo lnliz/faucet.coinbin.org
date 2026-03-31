@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/lnliz/go-turnstile v0.0.0-20251214174306-ab8f9f6a7fff
+	github.com/lnliz/go-turnstile v0.0.0-20260111004056-9970b82c08ee
 	github.com/prometheus/client_golang v1.23.2
 	github.com/xlzd/gotp v0.1.0
 	gorm.io/driver/sqlite v1.6.0
@@ -16,14 +16,13 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/kr/text v0.2.0 // indirect
-	github.com/mattn/go-sqlite3 v1.14.37 // indirect
+	github.com/mattn/go-sqlite3 v1.14.38 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.66.1 // indirect
-	github.com/prometheus/procfs v0.16.1 // indirect
-	go.yaml.in/yaml/v2 v2.4.2 // indirect
-	golang.org/x/sys v0.35.0 // indirect
+	github.com/prometheus/common v0.67.5 // indirect
+	github.com/prometheus/procfs v0.20.1 // indirect
+	go.yaml.in/yaml/v2 v2.4.4 // indirect
+	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/text v0.35.0 // indirect
-	google.golang.org/protobuf v1.36.9 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 )
