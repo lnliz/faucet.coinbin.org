@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path"
 	"runtime"
 	"strings"
 	"time"
@@ -145,25 +146,31 @@ func (rw *responseWriter) WriteHeader(code int) {
 	rw.ResponseWriter.WriteHeader(code)
 }
 
-func normalizeMetricsPath(path string, statusCode int) string {
-	if statusCode == http.StatusNotFound {
+func normalizeMetricsPath(p string, statusCode int) string {
+	if statusCode == http.StatusNotFound || statusCode == http.StatusTemporaryRedirect {
 		return "/"
 	}
 
-	switch path {
+	switch p {
 	case "/", "/api/submit", "/health":
-		return path
+		return p
 	}
 
-	if strings.HasPrefix(path, "/static/") {
+	if strings.HasPrefix(p, "/static/") {
 		return "/static/"
 	}
 
-	return path
+	return p
 }
 
 func metricsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cleaned := path.Clean(r.URL.Path)
+		if r.URL.Path != "/" && strings.HasSuffix(r.URL.Path, "/") {
+			cleaned += "/"
+		}
+		r.URL.Path = cleaned
+
 		start := time.Now()
 		rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 		next.ServeHTTP(rw, r)
